@@ -1,0 +1,20 @@
+﻿CSS ORAL QUIZ - PORTABLE WINDOWS VERSION
+Prepared by Redjan Phil S. Visitacion
+
+1. Copy this ENTIRE folder to your flash drive. Keep _internal and assets beside the EXE.
+2. Double-click CSS Oral Quiz.exe or Start Oral Practice.bat.
+3. The quiz opens at http://localhost:8765. Keep the black server window open.
+4. Scores are saved beside the EXE in records/Quiz Scores.xlsx.
+5. Close the server window before safely ejecting the flash drive.
+
+No Python installation, internet connection, or administrator access is required.
+Built for 64-bit Windows 10/11. A web browser is required.
+The records folder starts empty. To carry over your existing class records, close
+both quiz servers and copy the original oral-practice/records folder here.
+Only run one copy of the quiz at a time. If the original is still running, the
+portable launcher will open that existing website and its original records.
+
+Password for Restart server: Redjan09.
+Restart reloads the server and preserves saved scores, study records, and oral order.
+This packaged version is a snapshot: future Python/server changes require rebuilding
+the EXE. HTML, JavaScript, CSS, and images are beside it for ordinary website updates.
