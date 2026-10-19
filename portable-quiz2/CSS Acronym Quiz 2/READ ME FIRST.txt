@@ -1,0 +1,15 @@
+﻿CSS ACRONYM QUIZ 2 - PORTABLE WINDOWS
+Prepared by Redjan Phil S. Visitacion
+
+Extract the entire folder. Run CSS Acronym Quiz 2.exe or Start Quiz 2.bat.
+No Python installation required. Keep _internal and assets beside the EXE.
+The website opens at http://localhost:8766. Keep the server window open.
+
+Enter the student name, study, then answer 30 acronyms in random order.
+The shared word bank contains all 30 meanings. Click a meaning or type it
+in the answer box, then Submit answer. Two minutes per question.
+Excel scores save to records/Quiz Scores.xlsx in this folder.
+This is a fresh Quiz 2 with separate records from the first picture quiz.
+Restart password: Redjan09. Restart preserves saved data.
+Close the server before safely ejecting your flash drive.
+64-bit Windows 10/11 and a web browser required.
