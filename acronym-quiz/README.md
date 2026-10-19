@@ -7,3 +7,5 @@ Students enter their name, get five minutes of study, and then answer all 30 acr
 Quiz 2 has its own records folder, saved study times, Excel scores, oral wheel, and browser recovery. Quiz 1 and its records stay separate. Restart password: Redjan09.
 
 Prepared by Redjan Phil S. Visitacion. Terms follow the list supplied by the teacher.
+
+All 30 supplied images are attached to the corresponding acronym question and study card. Captions clarify related examples for CMOS (battery), ATX (motherboard), and LED (front-panel indicators).
