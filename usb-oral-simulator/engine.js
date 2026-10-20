@@ -1,6 +1,6 @@
 /* Pure command evaluator. This module never executes a shell command. */
 const USBLab={
- create(name,size=32,mode='boot'){return {name,size,mode,index:0,score:0,attempts:[],id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random().toString(16).slice(2),source:'D',target:'E',disk:1,isoMounted:false,isoName:'',mountEvents:[]}},
+ create(name,size=32,mode='boot'){return {name,size,mode,index:0,score:0,attempts:[],id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random().toString(16).slice(2),source:'D',target:'E',disk:1,virtualDriveCount:1,isoMounted:false,isoName:'',mountEvents:[]}},
  steps(s){return ['Open the disk management interpreter','Inspect the available disks','Select the USB disk, not the internal disk','Remove the USB partition information','Create a primary partition','Select partition 1','Quick-format using the scenario file system',...(s.mode==='boot'?['Mark the MBR partition active']:[]),'Return to the normal command prompt',...(s.mode==='boot'?['Copy the installation files from the source to the USB']:[])]},
  prompt(s){return s.index>=1&&s.index<(s.mode==='boot'?9:8)?'DISKPART>':'C:\\Windows\\System32>'},
  expected(s){return ['diskpart','list disk',`select disk ${s.disk}`,'clean','create part pri','select part 1',`format fs=${s.size<=32?'fat32':'ntfs'} quick`,...(s.mode==='boot'?['active']:[]),'exit',...(s.mode==='boot'?[`xcopy ${s.source}:\\*.* /s/h/f ${s.target}:\\`]:[])]},
@@ -16,8 +16,10 @@ const USBLab={
    correct=!!s.isoMounted&&tokens[0]==='xcopy'&&paths.length===2&&paths[0]===source&&paths[1]===target&&switches==='fhs';
   }
   if(s.usbEjected&&expected!=='diskpart'&&expected!=='list disk')correct=false;
+  if(command==='list disk'&&s.index>1&&this.prompt(s)==='DISKPART>')return {correct:true,message:this.output(s,1),done:false,step:s.index,informational:true};
   const step=s.index;let message;
   if(correct){s.score++;s.index++;message=this.output(s,step)}
+  else if(s.requirePhysicalUSB&&s.usbEjected)message='No USB flash drive is connected. Plug it in, then use list disk to check its detected capacity. No point awarded.';
   else if(s.usbEjected)message='The USB is ejected in this simulation. Reconnect it from File Explorer or the taskbar USB menu before continuing.';
   else if(expected.startsWith('xcopy')&&!s.isoMounted)message='No installation ISO is mounted. Open virtual PowerISO, select the OS image, and mount it before copying.';
   else if(/^select disk \d+$/.test(command))message='That is not the USB disk in your assignment. Identify the selected USB by its capacity. No disk was changed.';

@@ -100,6 +100,10 @@
    'C:\\Users\\Redjan '
    'Phil\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\ctypes\\_endian.py',
    'PYMODULE'),
+  ('ctypes.wintypes',
+   'C:\\Users\\Redjan '
+   'Phil\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\ctypes\\wintypes.py',
+   'PYMODULE'),
   ('dataclasses',
    'C:\\Users\\Redjan '
    'Phil\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\dataclasses.py',

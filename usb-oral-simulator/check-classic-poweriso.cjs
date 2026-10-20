@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('usb-oral-simulator/index.html','utf8'),storage=new Map();
+class Element{constructor(){this.children=[];this.value='';this.hidden=true;this.style={};this.disabled=false;this.scrollHeight=0}append(...nodes){this.children.push(...nodes)}replaceChildren(...nodes){this.children=nodes}addEventListener(type,fn){this[type]=fn}focus(){}click(){this.onclick?.()}}
+function boot(){const elements={};for(const m of html.matchAll(/id="([^"]+)"/g))elements[m[1]]=new Element();elements.welcome.hidden=false;const c=vm.createContext({document:{getElementById:id=>{assert(elements[id],id);return elements[id]},createElement:()=>new Element()},window:{addEventListener(){}},sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},fetch:async()=>({ok:true,json:async()=>({saved:true})}),confirm:()=>true,alert(){},setInterval(){},setTimeout,clearTimeout,Date,Blob,URL});vm.runInContext(fs.readFileSync('usb-oral-simulator/engine.js','utf8'),c);vm.runInContext(fs.readFileSync('usb-oral-simulator/app.js','utf8'),c);return {elements,c,run:s=>vm.runInContext(s,c)}}
+
+
+(async()=>{const b=boot();vm.runInContext(fs.readFileSync('usb-oral-simulator/explorer.js','utf8'),b.c);const e=b.elements;e.studentName.value='PowerISO Student';await e.entryForm.submit({preventDefault(){}});e.powerISOIcon.onclick();assert.equal(e.powerISOAdvanced.hidden,true);assert.equal(e.powerISOWindow.hidden,false);
+assert.equal(b.run('pisoDriveLetters().length'),1);
+function menu(id,text){const row=e[id].children.find(el=>el.textContent?.startsWith(text));assert(row,text);row.onclick()}
+e.pisoTools.onclick();menu('pisoMenu','Virtual Drive');menu('pisoSubmenu','Set number of drives');menu('pisoThirdMenu','1 drive');assert.equal(b.run('state.virtualDriveCount'),1);
+e.pisoOpen.onclick();assert.equal(e.pisoDialog.hidden,false);e.pisoImageList.children[1].onclick();e.pisoDialogConfirm.onclick();assert(b.run('state.pisoOpenedName').includes('Windows 11'));assert(e.pisoFiles.children.length>=7);assert.equal(b.run('state.isoMounted'),true);
+e.pisoTools.onclick();menu('pisoMenu','Virtual Drive');menu('pisoSubmenu','Drive D:');menu('pisoThirdMenu','Mount image');assert.equal(e.pisoDialog.hidden,false);e.pisoDialogCancel.onclick();
+b.run('state.index=9');e.pisoMount.onclick();menu('pisoSubmenu','Drive D:');menu('pisoThirdMenu','Mount image');assert.equal(e.pisoDialog.hidden,false);e.pisoDialogConfirm.onclick();assert(b.run('state.isoMounted'));assert.equal(b.run('state.score'),0);assert(e.pisoMountedStatus.textContent.includes('Windows 11'));
+e.pisoTools.onclick();menu('pisoMenu','Virtual Drive');menu('pisoSubmenu','Drive D:');menu('pisoThirdMenu','Unmount');assert.equal(b.run('state.isoMounted'),false);
+e.pisoTools.onclick();menu('pisoMenu','Virtual Drive');menu('pisoSubmenu','Set number of drives');menu('pisoThirdMenu','Disable');assert.equal(b.run('state.virtualDriveCount'),0);assert.equal(b.run('pisoDriveLetters().length'),0);
+console.log('PASS: classic toolbar/tree, Tools nested menus, drive configuration, ISO open dialog, mount prerequisite, mount/unmount, and disabled drives.');})().catch(e=>{console.error(e);process.exitCode=1});

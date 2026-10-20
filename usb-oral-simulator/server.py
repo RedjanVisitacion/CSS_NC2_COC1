@@ -3,7 +3,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 from xml.sax.saxutils import escape
-import io, json, os, re, secrets, socket, sqlite3, subprocess, sys, threading, time, zipfile
+import hashlib, io, json, os, re, secrets, socket, sqlite3, subprocess, sys, threading, time, zipfile
 from contextlib import contextmanager
 
 ROOT = Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else Path(__file__).resolve().parent
@@ -11,16 +11,69 @@ RECORDS = ROOT / 'records'
 LOCK = threading.Lock()
 SERVER_INSTANCE = secrets.token_hex(12)
 
-def usb_devices():
+def poweriso_path():
+    for base in [os.environ.get('ProgramW6432'),os.environ.get('ProgramFiles'),os.environ.get('ProgramFiles(x86)')]:
+        if base:
+            candidate=Path(base)/'PowerISO'/'PowerISO.exe'
+            if candidate.is_file():return candidate
+    return None
+
+def optical_drives():
+    script="""$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new(); $items=@(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=5' | ForEach-Object { [pscustomobject]@{ letter=$_.DeviceID; label=$_.VolumeName; ready=([bool]$_.VolumeName -or [double]$_.Size -gt 0) } }); ConvertTo-Json -InputObject $items -Compress"""
+    try:
+        result=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',script],capture_output=True,timeout=15,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        if result.returncode:raise ValueError()
+        drives=json.loads(result.stdout.decode('utf-8-sig').strip() or '[]')
+        return dict(drives=drives if isinstance(drives,list) else [drives])
+    except (OSError,ValueError,subprocess.TimeoutExpired):return dict(drives=[],error='Windows optical-drive detection is unavailable. Complete setup and try again.')
+
+def usb_devices(private=False):
     """Read USB disk metadata only. No disk management operation is performed."""
     if os.name!='nt':return dict(drives=[],error='USB detection is available on Windows only.')
-    script="""$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new(); $items=@(Get-Disk | Where-Object { $_.BusType -eq 'USB' -and -not $_.IsBoot -and -not $_.IsSystem } | ForEach-Object { $d=$_; $letters=@(Get-Partition -DiskNumber $d.Number -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter } | ForEach-Object { [string]$_.DriveLetter }); [pscustomobject]@{ disk=[int]$d.Number; name=[string]$d.FriendlyName; sizeGB=[math]::Round($d.Size/1000000000,1); letters=$letters } }); ConvertTo-Json -InputObject $items -Depth 3 -Compress"""
+    script="""$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new(); $items=@(Get-Disk | Where-Object { $_.BusType -eq 'USB' -and -not $_.IsBoot -and -not $_.IsSystem } | ForEach-Object { $d=$_; $pnp=[string](Get-CimInstance Win32_DiskDrive -Filter ('Index='+$d.Number)).PNPDeviceID; $letters=@(Get-Partition -DiskNumber $d.Number -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter } | ForEach-Object { [string]$_.DriveLetter }); [pscustomobject]@{ disk=[int]$d.Number; name=[string]$d.FriendlyName; identity=[string]$d.UniqueId; pnp=$pnp; sizeGB=[math]::Round($d.Size/1000000000,1); letters=$letters } }); ConvertTo-Json -InputObject $items -Depth 3 -Compress"""
     try:
         result=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',script],capture_output=True,timeout=20,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         if result.returncode:return dict(drives=[],error='Windows could not read USB metadata. Use a simulated drive or retry on this computer.')
         drives=json.loads(result.stdout.decode('utf-8-sig').strip() or '[]')
-        return dict(drives=drives if isinstance(drives,list) else [drives])
+        drives=drives if isinstance(drives,list) else [drives]
+        for drive in drives:
+            identity=drive.pop('identity','') or drive.get('pnp') or str(drive.get('name',''))+'|'+str(drive.get('sizeGB',''))
+            drive['key']=hashlib.sha256(identity.encode('utf-8')).hexdigest()
+            if not private:drive.pop('pnp',None)
+        return dict(drives=drives)
     except (OSError,ValueError,subprocess.TimeoutExpired):return dict(drives=[],error='USB detection is unavailable. Simulated drives still work.')
+
+def windows_eject(pnp):
+    """Ask Windows PnP for safe removal; never force a device offline."""
+    import ctypes
+    from ctypes import wintypes
+    cfg=ctypes.WinDLL('cfgmgr32')
+    locate=cfg.CM_Locate_DevNodeW
+    locate.argtypes=[ctypes.POINTER(wintypes.ULONG),wintypes.LPWSTR,wintypes.ULONG]
+    locate.restype=wintypes.ULONG
+    eject=cfg.CM_Request_Device_EjectW
+    eject.argtypes=[wintypes.ULONG,ctypes.POINTER(wintypes.ULONG),wintypes.LPWSTR,wintypes.ULONG,wintypes.ULONG]
+    eject.restype=wintypes.ULONG
+    node=wintypes.ULONG();veto=wintypes.ULONG();reason=ctypes.create_unicode_buffer(260)
+    status=locate(ctypes.byref(node),pnp,0)
+    if status:return dict(ejected=False,error='The USB is no longer available. Refresh the device list.')
+    status=eject(node.value,ctypes.byref(veto),reason,len(reason),0)
+    if status:return dict(ejected=False,error='Windows could not safely eject this USB. Close files or programs using it and try again. No forced removal was attempted.',code=int(status),veto=int(veto.value))
+    return dict(ejected=True)
+
+def eject_usb(key):
+    if not isinstance(key,str) or not re.fullmatch('[a-f0-9]{64}',key):return dict(ejected=False,error='Invalid USB identity.')
+    with LOCK:
+        devices=usb_devices(private=True)
+        if devices.get('error'):return dict(ejected=False,error=devices['error'])
+        drive=next((d for d in devices['drives'] if d.get('key')==key),None)
+        if not drive:return dict(ejected=False,error='This USB is not connected anymore.')
+        letters={str(letter).upper().rstrip(':') for letter in drive.get('letters',[])}
+        protected={path.resolve().drive.upper().rstrip(':') for path in (ROOT,RECORDS,Path(sys.executable))}
+        if letters&protected:return dict(ejected=False,error='This USB contains the running app, Python runtime, or saved scores. Run the app from the computer and use a separate practice USB before ejecting.')
+        if not drive.get('pnp'):return dict(ejected=False,error='Windows did not provide a device identity for safe removal. Use Windows Safely Remove Hardware.')
+        try:return windows_eject(drive['pnp'])
+        except OSError:return dict(ejected=False,error='Windows safe removal is unavailable in this account. No forced removal was attempted.')
 
 def workbook(rows):
     def cell(ref, text, style=0):
@@ -112,6 +165,7 @@ class Handler(SimpleHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path=='/api/status':return self.reply(200,{'scoreRecording':True,'instance':SERVER_INSTANCE,'restartSupported':True})
         if path=='/api/usb-devices':return self.reply(200,usb_devices())
+        if path=='/api/poweriso/status':return self.reply(200,dict(installed=bool(poweriso_path()),**optical_drives()))
         if path=='/api/oral':
             with LOCK, connect() as db:state=oral_state(db)
             return self.reply(200,state)
@@ -123,6 +177,13 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
     def do_POST(self):
         if not self.valid_host() or self.headers.get('Origin') not in ('http://localhost:8767','http://127.0.0.1:8767') or self.headers.get('Content-Type')!='application/json':return self.reply(403,{'error':'Open the quiz using the local launcher.'})
+        if self.path=='/api/poweriso/launch':
+            executable=poweriso_path()
+            if not executable:return self.reply(409,{'error':'Install PowerISO on this computer, then try again. It runs as a separate Windows application.'})
+            try:
+                subprocess.Popen([str(executable)],cwd=str(executable.parent),close_fds=True)
+                return self.reply(200,{'launched':True})
+            except OSError:return self.reply(503,{'error':'Windows could not open PowerISO. Try opening it from the Start menu.'})
         if self.path=='/api/restart':
             try:
                 size=int(self.headers.get('Content-Length','0'))
@@ -137,11 +198,14 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if self.path in ('/api/oral/spin','/api/oral/reset'):
             return self.reply(200,spin_oral(reset=self.path.endswith('/reset')))
-        if self.path not in ('/api/scores','/api/student/start','/api/student/study-finish'):return self.reply(404,{'error':'Not found.'})
+        if self.path not in ('/api/scores','/api/student/start','/api/student/study-finish','/api/usb-eject'):return self.reply(404,{'error':'Not found.'})
         try:
             length=int(self.headers.get('Content-Length','0'))
             if not 0<length<=4096:raise ValueError()
             payload=json.loads(self.rfile.read(length))
+            if self.path=='/api/usb-eject':
+                result=eject_usb(payload.get('key'))
+                return self.reply(200 if result.get('ejected') else 409,result)
             if self.path.startswith('/api/student/'):
                 return self.reply(200,student_study(payload,finish=self.path.endswith('/study-finish')))
             record(payload)
