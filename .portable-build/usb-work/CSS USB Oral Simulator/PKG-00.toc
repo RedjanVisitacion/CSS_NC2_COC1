@@ -1,0 +1,55 @@
+('C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+ 'USB Oral Simulator\\CSS USB Oral Simulator.pkg',
+ {'BINARY': True,
+  'DATA': True,
+  'EXECUTABLE': True,
+  'EXTENSION': True,
+  'PYMODULE': True,
+  'PYSOURCE': True,
+  'PYZ': False,
+  'SPLASH': True,
+  'SYMLINK': False},
+ [('pyi-contents-directory _internal', '', 'OPTION'),
+  ('PYZ-00.pyz',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+   'USB Oral Simulator\\PYZ-00.pyz',
+   'PYZ'),
+  ('struct',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+   'USB Oral Simulator\\localpycs\\struct.pyc',
+   'PYMODULE'),
+  ('pyimod01_archive',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+   'USB Oral Simulator\\localpycs\\pyimod01_archive.pyc',
+   'PYMODULE'),
+  ('pyimod02_importers',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+   'USB Oral Simulator\\localpycs\\pyimod02_importers.pyc',
+   'PYMODULE'),
+  ('pyimod03_ctypes',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+   'USB Oral Simulator\\localpycs\\pyimod03_ctypes.pyc',
+   'PYMODULE'),
+  ('pyimod04_pywin32',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\.portable-build\\usb-work\\CSS '
+   'USB Oral Simulator\\localpycs\\pyimod04_pywin32.pyc',
+   'PYMODULE'),
+  ('pyiboot01_bootstrap',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS '
+   'ORAL\\.portable-build\\tools\\PyInstaller\\loader\\pyiboot01_bootstrap.py',
+   'PYSOURCE'),
+  ('pyi_rth_inspect',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS '
+   'ORAL\\.portable-build\\tools\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'PYSOURCE'),
+  ('launcher',
+   'C:\\Users\\Redjan Phil\\Desktop\\CSS ORAL\\usb-oral-simulator\\launcher.py',
+   'PYSOURCE')],
+ 'python313.dll',
+ True,
+ False,
+ False,
+ [],
+ None,
+ None,
+ None)

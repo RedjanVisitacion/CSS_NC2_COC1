@@ -1,0 +1,16 @@
+# CSS USB Individual Oral
+
+Extract the entire folder. Run CSS USB Oral Simulator.exe or Start Individual Oral.bat, then open http://localhost:8767. Keep the server window open. No Python installation is needed. Keep _internal and assets beside the executable. Scores save to the records folder beside the executable. Close the server before safely ejecting your flash drive. Built for 64-bit Windows 10/11.
+
+Students enter a name and choose Bootable USB preparation (10 steps) or Clean & format (8 steps). On the virtual desktop, click the bottom search bar, search cmd, and open Command Prompt. Type commands manually. Correct steps turn green and earn one point. Incorrect steps turn red, earn zero, and can be retried. Each step scores once. At completion, Name and Score append automatically to records/Quiz Scores.xlsx. The command report lists every attempt. Refresh resumes this tab's exercise.
+
+All terminal commands are parsed by JavaScript against fictional state. No command is executed by Windows; no physical disk or file is inspected, erased, formatted, or copied.
+
+Scenario: Disk 0 is a 476 GB internal drive. Disk 1 is the USB. D: is the installation source; E: is the USB destination. This classroom exercise assumes an MBR USB, legacy BIOS boot context, suitable boot code/files, and automatic assignment of E: after formatting. active is an MBR step. Copying files alone does not guarantee bootability. UEFI/FAT32 compatibility, files larger than 4 GB, boot code, actual drive letter assignment, and different partition layouts require additional real-world steps. The requested FAT32 for <=32 GB and NTFS for >=64 GB is the scenario's grading rule, not a universal rule.
+
+Commands for boot mode: diskpart; list disk; select disk 1; clean; create part pri; select part 1; format fs=fat32 quick (16/32 GB) or format fs=ntfs quick (64/128 GB); active; exit; xcopy D:\*.* /s/h/f E:\
+
+Format-only mode omits active and xcopy. Full forms create partition primary and select partition 1 are accepted, as are case/spacing differences and equivalent separate /s /h /f switches. Disk numbers and drive letters must match the task. Text such as '(32GB below)' and placeholder '?' are explanations, not literal command arguments.
+
+Prepared by Redjan Phil S. Visitacion.
+Technical reference: https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/install-windows-from-a-usb-flash-drive
